@@ -2,28 +2,47 @@ import { Module } from '@nestjs/common';
 import { ConsumerService } from './consumer.service';
 import { SqsModule } from '@ssut/nestjs-sqs';
 import { SQSClient } from '@aws-sdk/client-sqs';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    SqsModule.register({
-      consumers: [
-        {
-          name: 'request-queue',
-          queueUrl:
-            'http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/request-queue',
-          region: 'us-east-1',
-          sqs: new SQSClient({
-            region: 'us-east-1',
-            credentials: {
-              accessKeyId: 'testkey',
-              secretAccessKey: 'testkey',
+    ConfigModule,
+    SqsModule.registerAsync({
+      useFactory: () => {
+        return {
+          consumers: [
+            {
+              name: process.env.SQS_REQUEST_QUEUE_NAME,
+              shouldDeleteMessages: true,
+              queueUrl: process.env.SQS_REQUEST_QUEUE_URL,
+              region: process.env.SQS_REGION,
+              sqs: new SQSClient({
+                region: process.env.SQS_REGION,
+                credentials: {
+                  accessKeyId: process.env.SQS_ACCESS_KEY_ID,
+                  secretAccessKey: process.env.SQS_SECRET_ACCESS_KEY,
+                },
+              }),
             },
-          }),
-        },
-      ],
-      producers: [],
+          ],
+          producers: [
+            {
+              name: process.env.SQS_RESPONSE_QUEUE_NAME,
+              queueUrl: process.env.SQS_RESPONSE_QUEUE_URL,
+              region: process.env.SQS_REGION,
+              sqs: new SQSClient({
+                region: process.env.SQS_REGION,
+                credentials: {
+                  accessKeyId: process.env.SQS_ACCESS_KEY_ID,
+                  secretAccessKey: process.env.SQS_SECRET_ACCESS_KEY,
+                },
+              }),
+            },
+          ],
+        };
+      },
     }),
   ],
-  providers: [ConsumerService],
+  providers: [ConsumerService, ConfigModule],
 })
 export class ConsumerModule {}
