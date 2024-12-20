@@ -44,8 +44,8 @@ export class ConsumerService {
       const userDetails: UserDetailsDto[] = users.map((user) => ({
         email: user.primaryEmail,
         name: user.name.fullName,
+        org_id: credentials.org_id,
       }));
-
       await this.sendMessage(userDetails);
     } else {
       console.log('No data found in the message body.');
